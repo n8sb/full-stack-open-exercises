@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Persons } from './components/Persons';
 import { Filter } from './components/Filter';
 import axios from 'axios';
+import personUtils from './services/persons';
 
 const App = () => {
   const [persons, setPersons] = useState([]);
@@ -10,9 +11,9 @@ const App = () => {
   const [filter, setFilter] = useState('');
 
   useEffect(() => {
-    axios
-      .get('http://localhost:3001/persons')
-      .then(({ data }) => setPersons(data));
+    personUtils
+      .getAllPersons()
+      .then((initialPersons) => setPersons(initialPersons));
   }, []);
 
   const filteredPersons = persons.filter((person) =>
@@ -21,21 +22,43 @@ const App = () => {
 
   const handleAddPerson = (event) => {
     event.preventDefault();
-    const personExists = persons.some(
+    const existingPerson = persons.find(
       (person) => person.name.toLowerCase() === newName.toLowerCase()
     );
-
-    if (personExists) {
-      alert(`${newName} is already in the phonebook.`);
-      return;
-    }
 
     const newPerson = {
       name: newName,
       number: newNumber,
-      id: Math.floor(Math.random() * 100000),
     };
-    setPersons([...persons, newPerson]);
+
+    if (existingPerson) {
+      if (
+        window.confirm(
+          `${newName} is already in the phonebook. Do you want to update their number?`
+        )
+      ) {
+        personUtils
+          .updatePerson(existingPerson.id, newPerson)
+          .then((updatedPerson) => {
+            setPersons(
+              persons.map((person) =>
+                person.id === updatedPerson.id ? updatedPerson : person
+              )
+            );
+          });
+      }
+      return;
+    }
+
+    axios
+      .post('http://localhost:3001/persons', newPerson)
+      .then((response) => {
+        setPersons([...persons, response.data]);
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+      });
+
     setNewName('');
     setNewNumber('');
   };
@@ -67,7 +90,10 @@ const App = () => {
         </div>
       </form>
       <h2>Numbers</h2>
-      <Persons persons={filteredPersons} />
+      <Persons
+        persons={filteredPersons}
+        setPersons={setPersons}
+      />
     </div>
   );
 };
