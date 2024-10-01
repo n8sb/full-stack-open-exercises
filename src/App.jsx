@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
+import './index.css';
 import { Persons } from './components/Persons';
 import { Filter } from './components/Filter';
 import axios from 'axios';
 import personUtils from './services/persons';
+import { Notification } from './components/Notification';
 
 const App = () => {
   const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState('');
   const [newNumber, setNewNumber] = useState('');
   const [filter, setFilter] = useState('');
+  const [message, setMessage] = useState(null);
 
   useEffect(() => {
     personUtils
@@ -19,6 +22,14 @@ const App = () => {
   const filteredPersons = persons.filter((person) =>
     person.name.toLowerCase().includes(filter.toLowerCase())
   );
+
+  const handleShowMessage = (name) => {
+    setMessage({
+      text: `${name} has been added to the phonebook.`,
+      messageType: 'success',
+    });
+    setTimeout(() => setMessage(null), 3000);
+  };
 
   const handleAddPerson = (event) => {
     event.preventDefault();
@@ -45,6 +56,13 @@ const App = () => {
                 person.id === updatedPerson.id ? updatedPerson : person
               )
             );
+          })
+          .catch((error) => {
+            console.error('Error:', error);
+            setMessage({
+              text: `Cannot update. ${existingPerson.name} has already been removed from the phonebook.`,
+              messageType: 'error',
+            });
           });
       }
       return;
@@ -54,6 +72,7 @@ const App = () => {
       .post('http://localhost:3001/persons', newPerson)
       .then((response) => {
         setPersons([...persons, response.data]);
+        handleShowMessage(newPerson.name);
       })
       .catch((error) => {
         console.error('Error:', error);
@@ -66,6 +85,7 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification message={message} />
       <Filter
         filter={filter}
         setFilter={setFilter}
