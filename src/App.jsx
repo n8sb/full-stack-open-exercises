@@ -8,6 +8,7 @@ const App = () => {
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
   const [filter, setFilter] = useState("");
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     async function fetchData() {
@@ -60,7 +61,8 @@ const App = () => {
           setPeople([...people, response]);
         })
         .catch((error) => {
-          console.error("Error:", error);
+          console.error("Error:", error.response.data.error);
+          setMessage(error.response.data.error);
         });
     }
 
@@ -71,6 +73,7 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+      <div>{message}</div>
       <Filter
         filter={filter}
         setFilter={setFilter}
